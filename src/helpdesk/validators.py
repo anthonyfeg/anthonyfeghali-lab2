@@ -23,6 +23,13 @@ def validate_file_extension(value):
     if not helpdesk_settings.HELPDESK_VALIDATE_ATTACHMENT_TYPES:
         return
 
+    # Lab 2 fix: reject names with more than one extension (e.g. shell.php.png),
+    # which a check that trusts only the final extension would let through.
+    if os.path.basename(value.name).count(".") > 1:
+        raise ValidationError(
+            _("Filenames with more than one extension are not allowed.")
+        )
+
     # TODO: one more check in case it is a file with no extension; we
     # should always allow that?
     if ext.lower() not in helpdesk_settings.HELPDESK_VALID_EXTENSIONS and not (

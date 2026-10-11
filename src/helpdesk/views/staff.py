@@ -1461,9 +1461,18 @@ def download_attachment(request):
     import os
 
     rel = request.GET.get("path", "")
-    full = os.path.join(settings.MEDIA_ROOT, rel)
-    with open(full, "rb") as handle:
-        data = handle.read()
+    # Lab 2 fix: resolve the final path first, then confirm it is still inside
+    # MEDIA_ROOT before opening it. Reject anything that escapes, with a generic
+    # error that leaks no filesystem path.
+    base = os.path.realpath(settings.MEDIA_ROOT)
+    full = os.path.realpath(os.path.join(base, rel))
+    if full != base and not full.startswith(base + os.sep):
+        raise Http404("Not found")
+    try:
+        with open(full, "rb") as handle:
+            data = handle.read()
+    except OSError:
+        raise Http404("Not found")
     response = HttpResponse(data, content_type="application/octet-stream")
     response["Content-Disposition"] = f'attachment; filename="{os.path.basename(rel)}"'
     return response
